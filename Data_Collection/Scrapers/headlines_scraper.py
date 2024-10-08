@@ -5,6 +5,12 @@ Authors: Venkat Ramaraju, Jayanth Rao
 Functionality implemented:
 - Scraper that retrieves headlines from multiple online web sources
 - Formats and outputs headlines in a Pandas dataframe
+Changes made by: Wenjie Xu
+Changes made:
+- added a time delay to prevent websites from ip banning or denying request.
+- added Date feature to final result.
+- stocks without headlines found were added to a file.
+- added printed progress tracker for scraping.
 """
 
 # Libraries and Dependencies
@@ -17,12 +23,14 @@ import numpy as np
 import yfinance as yf
 import re
 import hl_dict_creator
+import time
 
 pd.set_option('display.max_columns', 7)
 
 # Global Variables
-overall_headlines_df = pd.DataFrame(columns=['Ticker', 'Headline', 'URL', 'Publisher'])
+overall_headlines_df = pd.DataFrame(columns=['Ticker', 'Headline', 'URL', 'Publisher','Date'])
 stocks_dict = {}
+noHeadlines = []
 
 
 def get_soup(request, element, class_value):
@@ -123,9 +131,10 @@ def output(final_headlines_list, ticker):
             headline = hl[0]
             url = hl[1]
             publisher = hl[2]
+            date = hl[3]
 
-            row = {'Ticker': ticker, 'Headline': headline, 'URL': url, 'Publisher': publisher}
-            overall_headlines_df = overall_headlines_df.append(row, ignore_index=True)
+            row = {'Ticker': ticker, 'Headline': headline, 'URL': url, 'Publisher': publisher, 'Date': date}
+            overall_headlines_df = overall_headlines_df._append(row, ignore_index=True)
 
 # Each of the methods below retrieves the HTML text from the respective web page link and returns an array of the
 # headlines on those webpages, leveraging all the above methods as subroutines.
@@ -144,8 +153,8 @@ def get_all_headlines(stock, company_name):
     # List of sources
     total_sources = []
 
-    try:
-        hl_list = hl_dict_creator.get_reuters_headlines(stock)
+    """try:
+        hl_list = hl_dict_creator.get_reuters_headlines(stock, company_name)
         for hl in hl_list:
             hl_tuple = (hl['title'], hl['url'], hl['publisher'])
             relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
@@ -153,53 +162,57 @@ def get_all_headlines(stock, company_name):
             if relevant:
                 total_sources.append(hl_tuple)
     except Exception as e:
-        print("reuters handled exception", e)
+        print("reuters handled exception", e)"""
 
     try:
         hl_list = hl_dict_creator.get_cnbc_headlines(stock)
         for hl in hl_list:
-            hl_tuple = (hl['title'], hl['url'], hl['publisher'])
-            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
+            hl_tuple = (hl['title'], hl['url'], hl['publisher'], hl['date'])
+            """relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
             # relevant = True
             if relevant:
-                total_sources.append(hl_tuple)
+                total_sources.append(hl_tuple)"""
+            total_sources.append(hl_tuple)
     except Exception as e:
         print("cnbc handled exception", e)
 
     try:
         hl_list = hl_dict_creator.get_yahoo_headlines(stock)
         for hl in hl_list:
-            hl_tuple = (hl['title'], hl['url'], hl['publisher'])
-            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
+            hl_tuple = (hl['title'], hl['url'], hl['publisher'], hl['date'])
+            """relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
             # relevant = True
             if relevant:
-                total_sources.append(hl_tuple)
+                total_sources.append(hl_tuple)"""
+            total_sources.append(hl_tuple)
     except Exception as e:
         print("yahoo handled exception", e)
 
     try:
         hl_list = hl_dict_creator.get_cnn_headlines(stock)
         for hl in hl_list:
-            hl_tuple = (hl['title'], hl['url'], hl['publisher'])
-            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
+            hl_tuple = (hl['title'], hl['url'], hl['publisher'], hl['date'])
+            """relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
             # relevant = True
             if relevant:
-                total_sources.append(hl_tuple)
+                total_sources.append(hl_tuple)"""
+            total_sources.append(hl_tuple)
     except Exception as e:
         print("cnn handled exception", e)
 
     try:
         hl_list = hl_dict_creator.get_business_insider_headlines(stock)
         for hl in hl_list:
-            hl_tuple = (hl['title'], hl['url'], hl['publisher'])
-            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
+            hl_tuple = (hl['title'], hl['url'], hl['publisher'], hl['date'])
+            """relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
             # relevant = True
             if relevant:
-                total_sources.append(hl_tuple)
+                total_sources.append(hl_tuple)"""
+            total_sources.append(hl_tuple)
     except Exception as e:
         print("bi handled exception", e)
 
-    try:
+    """try:
         hl_list = hl_dict_creator.get_google_finance_headlines(stock)
         for hl in hl_list:
             hl_tuple = (hl['title'], hl['url'], hl['publisher'])
@@ -208,19 +221,22 @@ def get_all_headlines(stock, company_name):
             if relevant:
                 total_sources.append(hl_tuple)
     except Exception as e:
-        print("gf handled exception", e)
+        print("gf handled exception", e)"""
 
     try:
         hl_list = hl_dict_creator.get_morningstar_headlines(stock)
         for hl in hl_list:
-            hl_tuple = (hl['title'], hl['url'], hl['publisher'])
-            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
+            hl_tuple = (hl['title'], hl['url'], hl['publisher'], hl['date'])
+            """relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
             # relevant = True
             if relevant:
-                total_sources.append(hl_tuple)
+                total_sources.append(hl_tuple)"""
+            total_sources.append(hl_tuple)
     except Exception as e:
         print("ms handled exception", e)
-
+    if(len(total_sources)==0):
+        noHeadlines.append(stock)
+        print("No Headlines Found")
     return total_sources
 
 
@@ -236,12 +252,19 @@ def main():
         )
 
     # fetch headlines per ticker and append to overall_headlines_df
+    total = len(stocks_dict)
+    i = 0
     for ticker, name in stocks_dict.items():
+        print("Progress: (", i+1, "/", total, ")")
+        i+=1
         output(get_all_headlines(ticker, name), ticker)
+        time.sleep(3)
+        
 
     # output to file
     overall_headlines_df.to_csv("../headlines.csv", index=False)
-
+    with open("NoHeadlines.txt", "w", encoding="utf-8") as file:
+       file.write(str(noHeadlines))
 
 if __name__ == "__main__":
     main()

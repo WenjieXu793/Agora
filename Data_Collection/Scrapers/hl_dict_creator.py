@@ -4,11 +4,21 @@
 Authors: Venkat Ramaraju, Jayanth Rao
 Functionality implemented:
 - methods to fetch headlines as a list from each news publication
+Changes made by: Wenjie Xu
+Changes made:
+- Depricated some headline scrapers due to the sites employing ways to make scraping difficult.
+- Depricated other headlines for lack of headline relevancy or not including a date feature.
+- Made changes to other headline scrapers as the older code no longer works or other alternatives work better.
+- Saved date feature of the headlines
 """
 
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
+from datetime import datetime
+import dateparser
+import time
+import yfinance as yf
 
 # Global data
 nasdaq = pd.read_csv("nasdaq.csv", index_col=False)
@@ -22,14 +32,14 @@ nyse = nyse[['Symbol', 'Name']]
 # is aggregated for sentiment analysis. We populate the dataset with the headline, and the link to it (so it can
 # be clicked on in the interface).
 
-def get_reuters_headlines(ticker: str):
-    url = 'https://www.reuters.com/search/news?blob=' + ticker
+def get_reuters_headlines(ticker: str, company_name:str):#depricate due to lack of relevancy, inability to search with ticker
+    url = 'https://www.reuters.com/site-search/?query=' + ticker
 
     html_page = requests.get(url).text
     soup = BeautifulSoup(html_page, 'lxml')
 
     h3_tags = soup.find_all('h3', class_='search-result-title')
-
+    print(list(h3_tags))
     reuters_hls = []
 
     for h3 in h3_tags:
@@ -56,24 +66,42 @@ def get_reuters_headlines(ticker: str):
     return deduped
 
 
-def get_morningstar_headlines(ticker):
-    url = 'https://www.morningstar.com/stocks/xnas/' + ticker.lower() + '/news'
+def get_morningstar_headlines(ticker): #prohibits web scraping but does not actively enforce preventions
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    #print(requests.get('https://www.morningstar.com/stocks/xnys/pg/news', headers=headers).status_code)
 
-    html_page = requests.get(url).text
+    url = 'https://www.morningstar.com/stocks/xnas/' + ticker.lower() + '/news'
+    #try xnys with stock that didn't work
+    response = requests.get(url,headers=headers)
+
+
+    if response.status_code//100 == 4:
+        url = 'https://www.morningstar.com/stocks/xnys/' + ticker.lower() + '/news'
+        print('morningstar(xnas) 404 for', ticker)
+        response = requests.get(url,headers=headers)
+    if(response.status_code//100 == 4):
+        print('morningstar(xnys) 404 for', ticker, 'Failed.. Next')
+
+    html_page = response.text
     soup = BeautifulSoup(html_page, 'lxml')
 
-    links = soup.find_all('a', class_="mdc-link mdc-news-module__headline mds-link mds-link--no-underline")
+    links = soup.find_all('a', class_="mdc-link__mdc mdc-link--no-underline__mdc")
+    times = soup.find_all('time',class_="mdc-locked-text__mdc mdc-date")
 
     ms_hls = []
-    for link in links:
+    for i in range(len(links)):
         try:
-            href = link.get('href')
-            title = link.contents[0].strip()
+            headlineDate = datetime.strptime(str(times[i].get('datetime')), "%Y-%m-%dT%H:%M:%S.%fZ")
+            href = links[i].get('href')
+            title = links[i].contents[0].strip()
             hl_dict = {
                 "ticker": ticker,
                 "title": title.replace("&amp;", "").strip(),
                 "url": "https://morningstar.com" + href,
-                "publisher": "Morningstar"
+                "publisher": "Morningstar",
+                "date" : headlineDate
             }
 
             ms_hls.append(hl_dict)
@@ -87,27 +115,35 @@ def get_morningstar_headlines(ticker):
         if i['title'] not in temp_hls:
             temp_hls.append(i['title'])
             deduped.append(i)
-
     return deduped
 
 
-def get_google_finance_headlines(ticker):
-    url = ""
-    if ticker in nasdaq.Symbol.values:
-        url = 'https://www.google.com/finance/quote/' + ticker + ":NASDAQ"
-    elif ticker in nyse.Symbol.values:
-        url = 'https://www.google.com/finance/quote/' + ticker + ":NYSE"
+def get_google_finance_headlines(ticker): #Depricate due to not allowing scraping and also makes it difficult.
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    url = 'https://www.google.com/finance/quote/' + ticker.upper() + ":NASDAQ"
+    #try xnys with stock that didn't work
+    response = requests.get(url,headers=headers)
 
-    html_page = requests.get(url).text
+    if response.status_code//100 == 4:
+        url = 'https://www.google.com/finance/quote/' + ticker.upper() + ":NYSE"
+        print('google(nasdaq) 404 for', ticker)
+        response = requests.get(url,headers=headers)
+    if(response.status_code//100 == 4):
+        print('google(nyse) 404 for', ticker, 'Failed.. Next')
+    time.sleep(5)
+    html_page = response.text
     soup = BeautifulSoup(html_page, 'lxml')
 
     sections = soup.find_all('div', class_='z4rs2b')
-
+    
+    print(sections)
     gf_hls = []
     for sec in sections:
         try:
             link = sec.find('a', {'rel': 'noopener noreferrer'})
-            title = link.find('div', class_='AoCdqe').contents[0].strip()
+            title = link.find('div', class_='Yfwt5').contents[0].strip()
 
             hl_dict = {
                 "ticker": ticker,
@@ -131,26 +167,40 @@ def get_google_finance_headlines(ticker):
     return deduped
 
 
-def get_business_insider_headlines(ticker):
+def get_business_insider_headlines(ticker): #prohibits web scraping but does not actively enforce preventions
     url = 'https://markets.businessinsider.com/stocks/' + ticker.lower() + '-stock'
 
     html_page = requests.get(url).text
     soup = BeautifulSoup(html_page, 'lxml')
 
-    links = soup.find_all('a', class_="instrument-stories__link")
-
+    olinks = soup.find_all('a', class_="instrument-stories__link")
+    times = soup.find_all('time', class_="instrument-stories__date")
+    links=[]
+    hrefs=[]
+    for l in olinks:
+        if len(l.get_text())!=0 and l.get('href') not in hrefs:
+            hrefs.append(l.get('href'))
+            links.append(l)
     bi_hls = []
-
-    for link in links:
+    for i in range(len(links)):
         try:
+            headlineDate = datetime.strptime(str(times[i].get('datetime')), '%Y-%m-%d %H:%M')
+            
+            if links[i].get('href')[0] == '/':
+                link = "https://markets.businessinsider.com" + links[i].get('href')
+            else:
+                link = links[i].get('href')
+                
+            #if (datetime.now() - headlineDate).days <= 7:
             hl_dict = {
                 "ticker": ticker,
-                "title": link.contents[0].replace("&amp;", "").strip(),
-                "url": "https://markets.businessinsider.com" + link.get('href'),
-                "publisher": "Business Insider"
+                "title": links[i].contents[0].replace("&amp;", "").strip(),
+                "url": link,
+                "publisher": "Business Insider",
+                "date" : headlineDate
             }
-
             bi_hls.append(hl_dict)
+                
         except Exception as e:
             print("BI:", e)
             continue
@@ -165,13 +215,13 @@ def get_business_insider_headlines(ticker):
     return deduped
 
 
-def get_cnn_headlines(ticker):
+def get_cnn_headlines(ticker):#prohibits web scraping but does not actively enforce preventions
     url = 'https://money.cnn.com/quote/news/news.html?symb=' + ticker
 
     html_page = requests.get(url).text
     soup = BeautifulSoup(html_page, 'lxml')
 
-    links = soup.find_all('a', class_="wsod_bold")
+    links = soup.find_all('a', class_="markets-company-news__item")
 
     cnn_hls = []
 
@@ -179,9 +229,10 @@ def get_cnn_headlines(ticker):
         try:
             hl_dict = {
                 "ticker": ticker,
-                "title": link.contents[0].replace("&amp;", "").strip(),
+                "title": link.find('span', class_='markets-company-news__item--title').contents[0].replace("&amp;", "").strip(),
                 "url": link.get('href'),
-                "publisher": "CNN"
+                "publisher": "CNN",
+                "date" : datetime.strptime(str(link.find('span', class_='markets-company-news__item--day').contents[0]),"%b %d").replace(year=datetime.now().year)
             }
 
             cnn_hls.append(hl_dict)
@@ -198,28 +249,23 @@ def get_cnn_headlines(ticker):
 
     return deduped
 
-
-def get_yahoo_headlines(ticker):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                             'Chrome/71.0.3578.98 Safari/537.36'}
-
-    url = 'https://finance.yahoo.com/quote/' + ticker + '/news?p=' + ticker
-    html_page = requests.get(url, headers=headers).text
-    soup = BeautifulSoup(html_page, 'lxml')
-
-    links = soup.find_all("a", 'js-content-viewer wafer-caas Fw(b) Fz(18px) Lh(23px) LineClamp(2,46px) Fz('
-                               '17px)--sm1024 Lh(19px)--sm1024 LineClamp(2,38px)--sm1024 mega-item-header-link Td(n) '
-                               'C(#0078ff):h C(#000) LineClamp(2,46px) LineClamp(2,38px)--sm1024 '
-                               'not-isInStreamVideoEnabled')
-
+#switched to API instead
+def get_yahoo_headlines(ticker):   #Try headlines api. also -https://stackoverflow.com/questions/46922415/does-yahoo-finance-ban-web-scrapy-or-not
+    
+    stock = yf.Ticker(ticker)
+    
+    news = stock.news
+    
     yf_hls = []
-    for link in links:
+    
+    for item in news:
         try:
             hl_dict = {
                 "ticker": ticker,
-                "title": link.contents[2].replace("&amp;", "").strip(),
-                "url": "https://finance.yahoo.com" + link.get('href'),
-                "publisher": "Yahoo! Finance"
+                "title": item['title'].replace("&amp;", "").strip(),
+                "url": item['link'],
+                "publisher": "Yahoo! Finance",
+                "date" : datetime.fromtimestamp(item['providerPublishTime'])
             }
 
             yf_hls.append(hl_dict)
@@ -230,22 +276,23 @@ def get_yahoo_headlines(ticker):
     return yf_hls
 
 
-def get_cnbc_headlines(ticker):
-    url = 'https://www.cnbc.com/quotes/?symbol=' + ticker.lower() + '&qsearchterm=' + ticker.lower() + '&tab=news'
+def get_cnbc_headlines(ticker): #prohibits web scraping but does not actively enforce preventions
+    url = 'https://www.cnbc.com/quotes/'+ticker.upper()+'?qsearchterm=' + ticker.lower()
 
     html_page = requests.get(url).text
     soup = BeautifulSoup(html_page, 'lxml')
-
     links = soup.find_all("a", class_="LatestNews-headline")
+    dates = soup.find_all("time", class_="LatestNews-timestamp")
 
     cnbc_hls = []
-    for link in links:
+    for i in range(len(links)):
         try:
             hl_dict = {
                 "ticker": ticker,
-                "title": link.contents[0].replace("&amp;", "").strip(),
-                "url": link.get('href'),
-                "publisher": "CNBC"
+                "title": links[i].contents[0].replace("&amp;", "").strip(),
+                "url": links[i].get('href'),
+                "publisher": "CNBC",
+                "date": dateparser.parse(dates[i].contents[0])
             }
 
             cnbc_hls.append(hl_dict)
@@ -254,5 +301,4 @@ def get_cnbc_headlines(ticker):
             continue
 
     return cnbc_hls
-
 

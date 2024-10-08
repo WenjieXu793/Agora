@@ -5,6 +5,11 @@ Authors: Venkat Ramaraju, Jayanth Rao
 Functionality implemented:
 - Scraper that retrieves conversations from multiple online web sources
 - Formats and outputs conversations in a Pandas table
+Changes made by: Wenjie Xu
+Changes made:
+- Removed no longer used libraries
+- Source changed from yahoo finance to seeking alpha due to yahoo employing ways to discourage web scraping
+- Records date of conversations for future processing.
 """
 
 # Libraries and Dependencies
@@ -16,10 +21,10 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import StaleElementReferenceException
-from headlines_scraper import create_array
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+from datetime import date
 from pathlib import Path
 from selenium.webdriver.chrome.service import Service
 import time
@@ -32,34 +37,34 @@ def get_yahoo_conversations(stock):
     """
     Parses yahoo finance conversations page to get conversations related to the stock.
     """
-    stock = stock.replace('.', '-')  # In case a stock contains ".", EX: BRK.B
-    url = "https://finance.yahoo.com/quote/" + stock + "/community?p=" + stock
-
-    # Selenium Web Driver to click load more button and continue to retrieve conversation
     option = webdriver.ChromeOptions()
-    option.add_argument('headless')  # Runs without opening browser
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=option)
 
-    # Attempt to scroll as much as possible
+    # Open the webpage
+    url = 'https://seekingalpha.com/symbol/' + stock + '/comments'
     driver.get(url)
-    ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
-    i = 0
-    while i < 5:
-        try:
-            WebDriverWait(driver, 5, ignored_exceptions).until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="canvass-0-CanvassApplet"]/div/button')))
-
-            element = driver.find_element(By.XPATH, '//*[@id="canvass-0-CanvassApplet"]/div/button')
-            driver.execute_script("arguments[0].click();", element)
-        except Exception as e:
-            print("Error on iteration", i, "- Exception:", e)
-        i += 1
-
-    # Retrieving soup after load more button is clicked
-    soup = BeautifulSoup(driver.page_source, 'lxml')
+    wait = WebDriverWait(driver, 10)
+    
+    req = requests.get('https://seekingalpha.com/symbol/' + stock + '/comments')
+    soup = BeautifulSoup(req.content, 'html.parser')
     driver.quit()
+    stonk = soup.findAll(class_ = 'mb-12 break-words md:text-medium-3-r')
+    dates = soup.findAll(class_ = 'wlPdr flex items-center whitespace-nowrap text-right text-small-r text-black-35')
+    stockComments = []
+    sCommDates = []
+    finDates = []
 
-    return create_array(soup.find_all('div', class_='C($c-fuji-grey-l) Mb(2px) Fz(14px) Lh(20px) Pend(8px)'))
+    for s in stonk:
+        stockComments.append(s.get_text())
+    for d in dates:
+        sCommDates.append(d.get_text())
+    for d in sCommDates:
+        if d[0:1]=="Y":
+            finDates.append(datetime.today())
+        elif(d[0:1] !="V" and d[-1] != "M"):
+            finDates.append(datetime.strptime(str(d), '%b. %d, %Y'))
+        
+    return stockComments, finDates
 
 
 def get_all_conversations(stock):
@@ -69,13 +74,13 @@ def get_all_conversations(stock):
     :param stock: Name of stock ticker.
     :return: Overall array of conversations from various sources after cleaning (Removal of punctuations).
     """
-    yahoo_conversations = get_yahoo_conversations(stock)
-    yahoo_conversations = np.array(yahoo_conversations)
-
+    yahoo_conversations, dates = get_yahoo_conversations(stock)
+    ret = []
     if len(yahoo_conversations) == 0:
         return []
-
-    return list(np.concatenate(yahoo_conversations, axis=None))
+    for i in range(len(dates)):
+        ret.append([yahoo_conversations[i],dates[i]])
+    return ret
 
 
 def output(overall_data, stock):
@@ -86,13 +91,14 @@ def output(overall_data, stock):
     :return None.
     """
     # Removes duplicates by first converting to hash set (Stores only unique values), then converts back to list
-    overall_data = list(set(overall_data))
+    # overall_data = list(set(overall_data))
     file_path = str(Path(__file__).resolve().parents[1]) + '/Conversations/' + stock.upper() + '_conversations.csv'
 
     if len(overall_data) > 0:
         # Formatting current dataframe, merging with previously existing (if it exists)
         title = 'Conversation'
-        overall_dataframe = pd.DataFrame(overall_data, columns=[title])
+        dates = 'Date'
+        overall_dataframe = pd.DataFrame(overall_data, columns=[title, dates])
         overall_dataframe[title] = overall_dataframe[title].apply(demoji.replace)
         overall_dataframe.to_csv(file_path, index=False)
     else:
@@ -101,7 +107,7 @@ def output(overall_data, stock):
 
 def main():
     # Tickers and companies
-    stocks_df = pd.read_csv("../companies.csv")
+    stocks_df = pd.read_csv("C:\\Users\\indox\\Desktop\\School_Assignments\\Fall2024\\SER492\\Agora\\Data_Collection\\companies.csv")
     stocks_dict = {}
 
     for index, row in stocks_df.iterrows():
@@ -110,10 +116,13 @@ def main():
         )
 
     tickers = list(stocks_dict.keys())
-
+    total = len(tickers)
+    i = 0
+ 
     for stock in tickers:
         print("\n\n===================================================================")
-        print("Getting conversations for:", stock)
+        print("Getting conversations for:", stock, "    (", i+1, "/", total, ")")
+        i+=1
         try:
             overall_conversations = get_all_conversations(stock)
             output(overall_conversations, stock)
