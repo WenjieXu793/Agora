@@ -1,32 +1,29 @@
 Symbol,Name,Last Sale,Net Change,% Change,Market Cap,Country,IPO Year,Volume,Sector,Industry
-ACST,Acasti Pharma Inc. Class A Common Stock,$2.19,0.02,0.922%,96991121.00,Canada,,414832,,
-AKTX,Akari Therapeutics plc ADR (0.01 USD),$1.81,0.01,0.556%,86151147.00,United Kingdom,,85718,Health Care,Biotechnology: Pharmaceutical Preparations
-BELFB,Bel Fuse Inc. Class B Common Stock,$12.41,-0.40,-3.123%,154067221.00,United States,,144452,Capital Goods,Electrical Products
-CCLP,CSI Compressco LP Common Units,$1.59,0.01,0.633%,76274272.00,United States,2011,49956,Energy,Oilfield Services/Equipment
-CPIX,Cumberland Pharmaceuticals Inc. Common Stock,$2.80,-0.07,-2.439%,41662877.00,United States,2009,40006,Health Care,Biotechnology: Pharmaceutical Preparations
-DYAI,Dyadic International Inc. Common Stock,$5.37,0.10,1.898%,150785073.00,United States,,661610,Health Care,Biotechnology: Biological Products (No Diagnostic Substances)
-EBIX,Ebix Inc. Common Stock,$27.76,0.48,1.76%,858989867.00,United States,,396724,Technology,EDP Services
-EVOK,Evoke Pharma Inc. Common Stock,$1.18,0.09,8.257%,38278468.00,United States,2013,178643,Health Care,Biotechnology: Pharmaceutical Preparations
-FCAP,First Capital Inc. Common Stock,$41.17,-0.16,-0.387%,138902310.00,United States,,4384,Finance,Savings Institutions
-FLDM,Fluidigm Corporation Common Stock,$6.94,0.16,2.36%,528598827.00,United States,2011,1244626,Capital Goods,Biotechnology: Laboratory Analytical Instruments
-GTH,Genetron Holdings Limited ADS,$16.46,0.07,0.427%,1462828511.00,China,2020,2096812,Health Care,Medical Specialities
-HUGE,FSD Pharma Inc. Class B Subordinate Voting Shares,$1.55,-0.07,-4.321%,55545242.00,Canada,,476172,,
-JBSS,John B. Sanfilippo & Son Inc. Common Stock,$81.55,0.79,0.978%,935338214.00,United States,1991,113949,Consumer Non-Durables,Specialty Foods
-JCS,Communications Systems Inc. Common Stock,$8.30,0.32,4.01%,80657848.00,United States,,856570,Public Utilities,Telecommunications Equipment
-JOUT,Johnson Outdoors Inc. Class A Common Stock,$109.20,3.25,3.067%,1105890240.00,United States,,70218,Consumer Non-Durables,Recreational Products/Toys
-MARK,Remark Holdings Inc. Common Stock,$1.21,-0.03,-2.419%,121962475.00,United States,,1136365,Consumer Services,Telecommunications Equipment
-MMAT,Meta Materials Inc. Common Stock,$5.18,0.07,1.37%,1447127908.00,United States,,35628173,Technology,Semiconductors
-NCSM,NCS Multistage Holdings Inc. Common Stock,$27.08,-1.89,-6.524%,64459959.00,United States,2017,3104,Energy,Oilfield Services/Equipment
-NWS,News Corporation Class B Common Stock,$21.73,-0.27,-1.227%,12839002897.00,United States,,1541698,Consumer Services,Broadcasting
-PBTS,Powerbridge Technologies Co. Ltd. Ordinary Shares,$1.34,0.01,0.752%,12327386.00,China,2019,1750928,Technology,EDP Services
-POWL,Powell Industries Inc. Common Stock,$23.25,-0.31,-1.316%,271831397.00,United States,,587924,Consumer Durables,Electrical Products
-PSEC,Prospect Capital Corporation Common Stock,$7.87,0.03,0.383%,3062417929.00,United States,2004,3058097,Finance,Finance/Investors Services
-REDU,RISE Education Cayman Ltd American Depositary Shares,$0.78,-0.01,-1.266%,44056667.00,China,2017,87802,Miscellaneous,Service to the Health Industry
-RGP,Resources Connection Inc. Common Stock,$14.69,-0.31,-2.067%,487513211.00,United States,,1002599,Miscellaneous,Business Services
-SNGX,Soligenix Inc. Common Stock,$1.08,0.02,1.887%,43312061.00,United States,,630389,Health Care,Biotechnology: Pharmaceutical Preparations
-TLGT,Teligent Inc. Common Stock,$0.39,0.008,2.094%,36198822.00,United States,,3519215,Health Care,Biotechnology: Biological Products (No Diagnostic Substances)
-TOPS,TOP Ships Inc. Common Stock,$1.41,-0.01,-0.704%,56163081.00,Greece,,434465,Transportation,Marine Transportation
-TRMT,Tremont Mortgage Trust Common Shares of Beneficial Interest,$5.58,-0.08,-1.413%,46382757.00,United States,2017,11700,Consumer Services,Real Estate Investment Trusts
-TYME,Tyme Technologies Inc. Common Stock,$1.03,-0.01,-0.962%,177373101.00,United States,,788610,Health Care,Biotechnology: Pharmaceutical Preparations
-UFPT,UFP Technologies Inc. Common Stock,$63.44,-0.30,-0.471%,477792270.00,United States,1993,76551,Capital Goods,Containers/Packaging
-WTER,The Alkaline Water Company Inc. Common Stock,$1.64,0.05,3.145%,155348183.00,United States,,1554755,Consumer Non-Durables,Beverages (Production/Distribution)
+ABAT,American Battery Technology Company Common Stock,$1.06,0.03,2.913%,76371349.00,United States,,772700,Basic Materials,Metal Mining
+APLM,Apollomics Inc. Class A Ordinary Shares,$0.1472,-0.0108,-6.835%,16187584.00,United States,,684862,Health Care,Biotechnology: Pharmaceutical Preparations
+ARBB,ARB IOT Group Limited Ordinary Shares,$0.2654,0.0004,0.151%,7016513.00,Malaysia,2023,14382,Technology,EDP Services
+CHEK,Check-Cap Ltd. Ordinary Share,$1.49,0.06,4.196%,8717647.00,Israel,2015,20194,Health Care,Medical Electronics
+ENSC,Ensysce Biosciences Inc. Common Stock,$0.2199,-0.0036,-1.611%,1862811.00,United States,,241698,Health Care,Biotechnology: Pharmaceutical Preparations
+ESSA,ESSA Bancorp Inc. Common Stock,$18.44,0.02,0.109%,186825247.00,United States,2007,4296,Finance,Banks
+FIZZ,National Beverage Corp. Common Stock,$44.86,-0.48,-1.059%,4199427412.00,United States,,265910,Consumer Staples,Beverages (Production/Distribution)
+FNGR,FingerMotion Inc. Common Stock,$2.10,-0.06,-2.778%,110696985.00,United States,,219550,Technology,Computer Software: Prepackaged Software
+KITT,Nauticus Robotics Inc. Common stock,$1.34,-0.07,-4.965%,6230504.00,United States,2021,92402,Industrials,Industrial Machinery/Components
+KVHI,KVH Industries Inc. Common Stock,$4.75,-0.09,-1.86%,93641909.00,United States,1996,20161,Technology,Radio And Television Broadcasting And Communications Equipment
+KWE,KWESST Micro Systems Inc. Common Stock,$0.1668,0.0014,0.846%,2633772.00,Canada,,333256,Technology,Computer Software: Prepackaged Software
+MBIO,Mustang Bio Inc. Common Stock,$0.2274,0.009,4.121%,8466698.00,United States,,151842,Health Care,Biotechnology: Pharmaceutical Preparations
+NVVE,Nuvve Holding Corp. Common Stock,$4.54,-0.2425,-5.071%,2963362.00,China,2020,49406,Industrials,Electrical Products
+ONCO,Onconetix Inc. Common Stock,$4.96,0.26,5.532%,41138815.00,United States,2022,78475,Health Care,Biotechnology: Pharmaceutical Preparations
+ORGS,Orgenesis Inc. Common Stock,$3.83,-0.295,-7.152%,18272107.00,United States,,20843,Health Care,Biotechnology: Pharmaceutical Preparations
+PEGY,Pineapple Energy Inc. Common Stock,$0.1124,-0.0127,-10.152%,980535.00,United States,,13796093,Utilities,Telecommunications Equipment
+PRTG,Portage Biotech Inc. Common Stock,$5.47,-0.04,-0.726%,5735919.00,Canada,,37087,Energy,Oil & Gas Production
+PSEC,Prospect Capital Corporation Common Stock,$5.20,-0.05,-0.952%,2230738728.00,United States,2004,1762861,Finance,Finance: Consumer Services
+QSG,QuantaSing Group Limited American Depositary Shares,$4.66,0.94,25.269%,238186594.00,China,2023,9910399,Real Estate,Other Consumer Services
+RGS,Regis Corporation Common Stock,$26.49,-0.80,-2.931%,60395823.00,United States,1991,52205,Consumer Discretionary,Other Consumer Services
+RIME,Algorhythm Holdings Inc. Common Stock,$0.6001,0.1381,29.892%,5843084.00,United States,,159537066,Consumer Staples,Diversified Electronic Products
+SEEL,Seelos Therapeutics Inc. Common Stock,$3.10,-0.31,-9.091%,1351470.00,United States,,243395,Health Care,Biotechnology: Pharmaceutical Preparations
+SLRX,Salarius Pharmaceuticals Inc. Common Stock,$1.47,0.06,4.255%,2118501.00,United States,2015,18607,Health Care,Biotechnology: Pharmaceutical Preparations
+SUUN,SolarBank Corporation Common Stock,$4.00,0.09,2.302%,132200000.00,Canada,,45400,Utilities,Power Generation
+TCBP,TC BioPharm (Holdings) plc American Depositary Shares,$5.83,-1.76,-23.188%,3393177.00,United Kingdom,2022,624005,Health Care,Biotechnology: Biological Products (No Diagnostic Substances)
+TOI,The Oncology Institute Inc. Common Stock,$0.3244,0.0048,1.502%,24489115.00,United States,2020,35221,Health Care,Medical/Nursing Services
+TRST,TrustCo Bank Corp NY Common Stock,$31.99,-0.24,-0.745%,608143752.00,United States,,46036,Finance,Major Banks
+VRM,Vroom Inc. Common Stock,$9.70,-0.43,-4.245%,17658481.00,United States,2020,29889,Consumer Discretionary,Retail-Auto Dealers and Gas Stations

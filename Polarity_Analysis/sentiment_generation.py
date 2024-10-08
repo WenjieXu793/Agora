@@ -4,6 +4,10 @@
 Authors: Venkat Ramaraju, Jayanth Rao
 Functionality implemented:
 - Generates and aggregates polarities across headlines and conversations
+Changes made by: Wenjie Xu
+Changes made:
+- No longer uses twitter
+- When no conversation sentiment is present, then use sentiment of entire stock market.
 """
 
 # Libraries and Dependencies
@@ -11,13 +15,16 @@ import os
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import pandas as pd
 from nltk.stem import WordNetLemmatizer
-import tweepy
+import nltk
+nltk.download('vader_lexicon')
+#import tweepy
 
 # Global Variables
 sia = SentimentIntensityAnalyzer()
 lemmatizer = WordNetLemmatizer()
 conversations_map = {}
 headlines_map = {}
+convoSentimentSumCount=[0.0,0.0]
 
 
 def update_stock_terminology():
@@ -80,9 +87,9 @@ def generate_aggregated_csv():
             if ticker in conversations_map:
                 polarity = conversations_map[ticker]
             else:
-                polarity = twitter_sentiment(ticker)
+                polarity = convoSentimentSumCount[1]/convoSentimentSumCount[0]
             row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity}
-            aggregated_df = aggregated_df.append(row, ignore_index=True)
+            aggregated_df = aggregated_df._append(row, ignore_index=True)
         except RuntimeError as e:
             print(e, "was handled")
 
@@ -118,6 +125,8 @@ def get_conversation_sentiments():
 
         if count_of_conversations[ticker] > 0:
             conversations_map[ticker] = sum_of_polarities[ticker]/count_of_conversations[ticker]
+            convoSentimentSumCount[0] += conversations_map[ticker]
+            convoSentimentSumCount[1]+=1
         else:
             conversations_map[ticker] = 0.0
 

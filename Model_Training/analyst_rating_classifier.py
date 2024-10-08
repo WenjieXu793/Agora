@@ -74,9 +74,10 @@ def get_data():
         master_df = master_df.append(db_row, ignore_index=True)
 
     russell_df = pd.read_csv('Stocks/Russell.csv')
+    
     for index, row in russell_df.iterrows():
         if row['Symbol'] in master_dict:
-            if analyst_dict[row['Symbol']] is 'Buy' or analyst_dict[row['Symbol']] is 'Strong Buy':
+            if analyst_dict[row['Symbol']] == 'Buy' or analyst_dict[row['Symbol']] == 'Strong Buy':
                 training_row = {'Symbol': row['Symbol'], 'Name': company_dict[row['Symbol']], 'Buy': master_dict[row['Symbol']],
                       'Analyst': analyst_dict[row['Symbol']]}
                 training_df = training_df.append(training_row, ignore_index=True)

@@ -2,12 +2,9 @@
 # coding: utf-8
 
 """
-Authors: Venkat Ramaraju, Jayanth Rao
+Authors: Wenjie Xu
 Functionality implemented:
-- Prepares data for model training from the yFinance API
-Changes made by: Wenjie Xu
-Changes made:
-- yfinance did not support many of the required features. Found a new API called yahooquery that does.
+- Appends to a file instead of rewriting it in case of connection errors with the first script.
 """
 
 import pandas
@@ -15,6 +12,7 @@ from yahooquery import Ticker
 import csv
 import os
 import pandas as pd
+import time
 
 all_comps = pd.read_csv("output_csvs/final_db.csv", index_col=0)
 
@@ -27,10 +25,6 @@ def get_stock_metrics(company_df: pandas.DataFrame):
     # Selected columns (From feature selection)
     new_columns = ['beta', 'profitMargins', 'forwardEps', 'bookValue', 'heldPercentInstitutions',
                    'shortRatio', 'shortPercentOfFloat']
-    with open("stock_metric_data_TEST.csv", mode='w', newline='') as file:
-        file.write("Symbol,beta,profitMargins,forwardEps,bookValue,heldPercentInstitutions,shortRatio,shortPercentOfFloat\n")
-    with open("NoMetrics.csv", mode='w', newline='') as file:
-        file.write("Symbol\n")
 
     del company_df["Name"]
     del company_df["Buy"]
@@ -43,15 +37,18 @@ def get_stock_metrics(company_df: pandas.DataFrame):
     company_df.to_csv("stock_metric_data.csv")
     # Building the CSV
     total = len(company_df)
-    i = 1
-    for index, row in company_df.iterrows():
+    i = 4089
+    while i-1< total:
+        index = i-1
+        row = company_df.loc[i-1]
         
         symbol = ''.join(row["Symbol"].split())
-        ticker = Ticker(symbol)
-        data = ticker.key_stats
+        
 
         print("Getting metrics for:", symbol, "      (", i, "/", total, ")")
         try:
+            ticker = Ticker(symbol)
+            data = ticker.key_stats
                 
             if data[symbol] != ("Quote not found for ticker symbol: ", symbol):
                 #print(data[symbol])
@@ -66,6 +63,10 @@ def get_stock_metrics(company_df: pandas.DataFrame):
                 with open("NoMetrics.csv", mode='a', newline='') as csv_file:
                     writer = csv.writer(csv_file)
                     writer.writerow(symbol)
+        except ConnectionError as e:
+            print(e, "handled")
+            time.sleep(5)
+            continue
         except (KeyError, RuntimeError) as e:
             with open("NoMetrics.csv", mode='a', newline='') as csv_file:
                     writer = csv.writer(csv_file)

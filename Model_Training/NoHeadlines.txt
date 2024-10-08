@@ -1,0 +1,1 @@
+['REDU', 'WTER', 'ORPH', 'AAIC', 'CAI', 'CLDR', 'DIDI', 'GCP', 'GPX', 'PNM', 'PRTY', 'WPG', 'ENDP', 'FRBK', 'IDRA', 'INOV', 'ODT', 'PBIP', 'RIDE', 'SCR', 'STMP', 'ENIA', 'LAIX', 'RYB', 'NUAN', 'FBHS', 'SC', 'RE', 'HRC', 'CONE', 'TSP', 'BRKS', 'CFX', 'CHNG', 'HTA', 'TMX', 'HFC', 'HHC']
