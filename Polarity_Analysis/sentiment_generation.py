@@ -23,8 +23,11 @@ nltk.download('vader_lexicon')
 sia = SentimentIntensityAnalyzer()
 lemmatizer = WordNetLemmatizer()
 conversations_map = {}
+conversation_delta = {}
 headlines_map = {}
+headlines_delta = {}
 convoSentimentSumCount=[0.0,0.0]
+convoSentimentSumCountL2D=[0.0,0.0]
 
 
 def update_stock_terminology():
@@ -50,6 +53,7 @@ def get_headline_sentiments():
     Prints out the aggregated results to CSV.
     """
     headlines_csv = pd.read_csv("../Data_Collection/headlines.csv")
+    headlines_csv['Date'] = pd.to_datetime(headlines_csv['Date'])
     sum_of_polarities = {}
     count_of_headlines = {}
 
@@ -63,7 +67,26 @@ def get_headline_sentiments():
             if row['Ticker'] not in sum_of_polarities:
                 sum_of_polarities[row['Ticker']] = scores["compound"]
                 count_of_headlines[row['Ticker']] = 1
+                latestHeadline = row['Headline']
+                latestDate = row['Date']
+                latest = scores["compound"]
+                headlines_delta[row['Ticker']] = 0 
+                flag = True
             else:
+                if flag:
+                    latestDate2 = row['Date']
+                    flag = False
+                    headlines_delta[row['Ticker']] = latest-scores["compound"]
+                if latestDate <= row['Date'] and not latestHeadline == row['Headline']:
+                    headlines_delta[row['Ticker']] = scores["compound"] - latest
+                    latestHeadline = row['Headline']
+                    latestDate2 = latestDate
+                    latest = scores["compound"]
+                    latestDate = row['Date']
+                elif latestDate2 < row['Date'] and not latestHeadline == row['Headline']:
+                    headlines_delta[row['Ticker']] = latest-scores["compound"]
+                    latestDate2 = row['Date']
+                    
                 sum_of_polarities[row['Ticker']] = sum_of_polarities[row['Ticker']] + scores["compound"]
                 count_of_headlines[row['Ticker']] = count_of_headlines[row['Ticker']] + 1
         except RuntimeError as e:
@@ -85,10 +108,16 @@ def generate_aggregated_csv():
     for ticker, headlines_polarity in headlines_map.items():
         try:
             if ticker in conversations_map:
-                polarity = conversations_map[ticker]
+                if conversations_map[ticker] == -5:
+                    polarity = convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                    convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
+                else:
+                    polarity = conversations_map[ticker]
+                    convoL2D = conversation_delta[ticker]
             else:
-                polarity = convoSentimentSumCount[1]/convoSentimentSumCount[0]
-            row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity}
+                polarity = convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
+            row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity, "HeadlinesL2Delta": headlines_delta[ticker], "ConversationL2Delta": convoL2D}
             aggregated_df = aggregated_df._append(row, ignore_index=True)
         except RuntimeError as e:
             print(e, "was handled")
@@ -107,6 +136,7 @@ def get_conversation_sentiments():
     # Aggregates data across conversations
     for ticker_csv in list_of_conversations:
         conversations_csv = pd.read_csv('../Data_Collection/Conversations/' + str(ticker_csv))
+        conversations_csv['Date'] = pd.to_datetime(conversations_csv['Date'])
         ticker = ticker_csv.split("_")[0].upper()
         for index, row in conversations_csv.iterrows():
             try:
@@ -117,7 +147,13 @@ def get_conversation_sentiments():
                 if ticker not in sum_of_polarities:
                     sum_of_polarities[ticker] = scores["compound"]
                     count_of_conversations[ticker] = 1
+                    latest = scores["compound"]
+                    conversation_delta[ticker] = 0 
+                    flag = True
                 else:
+                    if flag: #since conversations are already ordered by date.
+                        conversation_delta[ticker] = latest - scores["compound"]
+                        flag = False
                     sum_of_polarities[ticker] = sum_of_polarities[ticker] + scores["compound"]
                     count_of_conversations[ticker] = count_of_conversations[ticker] + 1
             except RuntimeError as e:
@@ -126,9 +162,11 @@ def get_conversation_sentiments():
         if count_of_conversations[ticker] > 0:
             conversations_map[ticker] = sum_of_polarities[ticker]/count_of_conversations[ticker]
             convoSentimentSumCount[0] += conversations_map[ticker]
-            convoSentimentSumCount[1]+=1
+            convoSentimentSumCount[1] += 1
+            convoSentimentSumCountL2D[0] += conversation_delta[ticker]
+            convoSentimentSumCountL2D[1] += 1
         else:
-            conversations_map[ticker] = 0.0
+            conversations_map[ticker] = -5 #arbitrary number outside possible range of sentiment scores
 
 
 def twitter_sentiment(ticker):
