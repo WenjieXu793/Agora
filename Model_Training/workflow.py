@@ -41,6 +41,8 @@ def merge_polarities_with_all_stocks():
     all_companies_data["convo_polarity"] = np.nan
     all_companies_data["last2PolarityDeltaConvo"] = np.nan
     all_companies_data["last2PolarityDeltaHead"] = np.nan
+    all_companies_data["HeadlinesR2"] = np.nan
+    all_companies_data["ConversationR2"] = np.nan
 
     for index, row in aggregated_polarities.iterrows():
         company_row = all_companies_data.loc[all_companies_data["Symbol"] == row["Ticker"]]
@@ -51,6 +53,8 @@ def merge_polarities_with_all_stocks():
         all_companies_data.loc[company_row.index.item(), "headline_polarity"] = round(row["Headlines"], 2)
         all_companies_data.loc[company_row.index.item(), "last2PolarityDeltaConvo"] = round(row["ConversationL2Delta"], 2)
         all_companies_data.loc[company_row.index.item(), "last2PolarityDeltaHead"] = round(row["HeadlinesL2Delta"], 2)
+        all_companies_data.loc[company_row.index.item(), "HeadlinesR2"] = round(row["HeadlinesR2"], 2)
+        all_companies_data.loc[company_row.index.item(), "ConversationR2"] = round(row["ConversationR2"], 2)
 
 
 def fetch_metrics_for_all_stocks():
@@ -96,7 +100,7 @@ def generate_predictions():
     global all_companies_data
 
     training_rows = all_companies_data[~all_companies_data['headline_polarity'].isnull() &
-                                       ~all_companies_data['convo_polarity'].isnull()].drop(columns=['last2PolarityDeltaHead', 'last2PolarityDeltaConvo'])
+                                       ~all_companies_data['convo_polarity'].isnull()].drop(columns=['last2PolarityDeltaHead', 'last2PolarityDeltaConvo','ConversationR2','HeadlinesR2'])
 
     del training_rows['Unnamed: 0']
     del training_rows['Name']

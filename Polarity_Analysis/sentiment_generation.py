@@ -16,6 +16,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import pandas as pd
 from nltk.stem import WordNetLemmatizer
 import nltk
+import numpy as np
 nltk.download('vader_lexicon')
 #import tweepy
 
@@ -26,9 +27,12 @@ conversations_map = {}
 conversation_delta = {}
 headlines_map = {}
 headlines_delta = {}
-convoSentimentSumCount=[0.0,0.0]
+#convoSentimentSumCount=[0.0,0.0]
+convoSentimentR2_map = {}
+headlineSentimentR2_map = {}
 convoSentimentSumCountL2D=[0.0,0.0]
-
+headlineSentiments = {}
+headlineSentimentDates = {}
 
 def update_stock_terminology():
     """
@@ -56,7 +60,6 @@ def get_headline_sentiments():
     headlines_csv['Date'] = pd.to_datetime(headlines_csv['Date'])
     sum_of_polarities = {}
     count_of_headlines = {}
-
     # Aggregates data across headlines
     for index, row in headlines_csv.iterrows():
         try:
@@ -72,6 +75,10 @@ def get_headline_sentiments():
                 latest = scores["compound"]
                 headlines_delta[row['Ticker']] = 0 
                 flag = True
+                    
+                headlineSentiments[row['Ticker']] = [scores["compound"]]
+                headlineSentimentDates[row['Ticker']] = [row["Date"]]
+                
             else:
                 if flag:
                     latestDate2 = row['Date']
@@ -89,35 +96,60 @@ def get_headline_sentiments():
                     
                 sum_of_polarities[row['Ticker']] = sum_of_polarities[row['Ticker']] + scores["compound"]
                 count_of_headlines[row['Ticker']] = count_of_headlines[row['Ticker']] + 1
+                headlineSentiments[row['Ticker']].append(scores["compound"])
+                headlineSentimentDates[row['Ticker']].append(row["Date"])
         except RuntimeError as e:
             print(e, "was handled")
 
     for ticker in sum_of_polarities:
         headlines_map[ticker] = sum_of_polarities[ticker]/count_of_headlines[ticker]
-
-
+        
+        reference_date = headlineSentimentDates[ticker][0]
+        x = np.array([(d - reference_date).total_seconds()/60 for d in headlineSentimentDates[ticker]])
+        y = np.array(headlineSentiments[ticker])
+        if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:
+            headlineSentimentR2_map[ticker] = 0
+        else:
+            corr_matrix = np.corrcoef(x, y)
+            headlineSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(headlineSentiments[ticker]) #multiplied by supporting nodes
+            
 def generate_aggregated_csv():
     """
     Generates a CSV with the aggregated polarities of headlines for the group of stocks that are being analyzed. In
     the case where no conversations are available for a given stock, we default to Twitter conversations for our
     analysis.
     """
-    aggregated_df = pd.DataFrame(columns=["Ticker", "Conversations", "Headlines"])
+    aggregated_df = pd.DataFrame(columns=["Ticker", "Conversations", "Headlines", "HeadlinesL2Delta", "ConversationL2Delta", "HeadlinesR2", "ConversationR2"])
 
     # Outputs aggregated headlines and conversations to a CSV.
     for ticker, headlines_polarity in headlines_map.items():
         try:
             if ticker in conversations_map:
                 if conversations_map[ticker] == -5:
-                    polarity = convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                    values = np.array(list(conversations_map.values()))
+                    values = values[values != 0] #prevent divide by 0 errors
+                    polarity = len(values) / np.sum(1.0 / values) #convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                    
+                    #values = np.array(list(convoSentimentR2_map.values()))
+                    #values = values[values != 0] #prevent divide by 0 errors
+                    convoR2 = 0 #np.average(list(convoSentimentR2_map.values()))
+                    
                     convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
                 else:
                     polarity = conversations_map[ticker]
                     convoL2D = conversation_delta[ticker]
+                    convoR2 = convoSentimentR2_map[ticker]
             else:
-                polarity = convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                values = np.array(list(conversations_map.values()))
+                values = values[values != 0] #prevent divide by 0 errors
+                polarity = len(values) / np.sum(1.0 / values) #convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                
+                #values = np.array(list(convoSentimentR2_map.values()))
+                #values = values[values != 0] #prevent divide by 0 errors
+                convoR2 = 0 #np.average(list(convoSentimentR2_map.values()))
+                
                 convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
-            row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity, "HeadlinesL2Delta": headlines_delta[ticker], "ConversationL2Delta": convoL2D}
+            row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity, "HeadlinesL2Delta": headlines_delta[ticker], "ConversationL2Delta": convoL2D, "HeadlinesR2": headlineSentimentR2_map[ticker], "ConversationR2": convoR2}
             aggregated_df = aggregated_df._append(row, ignore_index=True)
         except RuntimeError as e:
             print(e, "was handled")
@@ -138,12 +170,15 @@ def get_conversation_sentiments():
         conversations_csv = pd.read_csv('../Data_Collection/Conversations/' + str(ticker_csv))
         conversations_csv['Date'] = pd.to_datetime(conversations_csv['Date'])
         ticker = ticker_csv.split("_")[0].upper()
+        convoSentiments=[]
+        convoSentimentDates=[]
         for index, row in conversations_csv.iterrows():
             try:
                 lemma_text = lemmatizer.lemmatize(str(row['Conversation']))
                 scores = sia.polarity_scores(lemma_text)
                 row["Polarity"] = scores["compound"]
-
+                convoSentiments.append(row["Polarity"])
+                convoSentimentDates.append(row["Date"])
                 if ticker not in sum_of_polarities:
                     sum_of_polarities[ticker] = scores["compound"]
                     count_of_conversations[ticker] = 1
@@ -161,8 +196,17 @@ def get_conversation_sentiments():
 
         if count_of_conversations[ticker] > 0:
             conversations_map[ticker] = sum_of_polarities[ticker]/count_of_conversations[ticker]
-            convoSentimentSumCount[0] += conversations_map[ticker]
-            convoSentimentSumCount[1] += 1
+            
+            reference_date = convoSentimentDates[0]
+            x = np.array([(d - reference_date).total_seconds()/60 for d in convoSentimentDates])
+            y = np.array(convoSentiments)
+            if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:
+                convoSentimentR2_map[ticker] = 0
+            else:
+                corr_matrix = np.corrcoef(x, y)
+                convoSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(convoSentiments) #multiplied by supporting nodes
+            #convoSentimentSumCount[0] += conversations_map[ticker]
+            #convoSentimentSumCount[1] += 1
             convoSentimentSumCountL2D[0] += conversation_delta[ticker]
             convoSentimentSumCountL2D[1] += 1
         else:
