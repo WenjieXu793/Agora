@@ -17,6 +17,7 @@ import pandas as pd
 from nltk.stem import WordNetLemmatizer
 import nltk
 import numpy as np
+from scipy.special import comb
 nltk.download('vader_lexicon')
 #import tweepy
 
@@ -33,6 +34,17 @@ headlineSentimentR2_map = {}
 convoSentimentSumCountL2D=[0.0,0.0]
 headlineSentiments = {}
 headlineSentimentDates = {}
+pascalWeightedHeadline = {}
+pascalWeightedConvo = {}
+
+def pascal_half(input_number):
+    """
+    Generate half of Pascal's triangle starting at row (2 * input_number - 1).
+    For example: 1 will give [1], 2 will return [3,1], 3 will output [10, 5, 1], 4 will output [35, 21, 7, 1]
+    """
+    row = 2 * input_number - 1
+    full_row = [int(comb(row, col)) for col in range(row + 1)]
+    return full_row[len(full_row) // 2:]
 
 def update_stock_terminology():
     """
@@ -104,7 +116,12 @@ def get_headline_sentiments():
     for ticker in sum_of_polarities:
         headlines_map[ticker] = sum_of_polarities[ticker]/count_of_headlines[ticker]
         
-        reference_date = headlineSentimentDates[ticker][0]
+        dates=headlineSentimentDates[ticker]
+        sentiments=headlineSentiments[ticker]
+        sorted_pairs = sorted(zip(dates, sentiments), key=lambda x: x[0], reverse=True)
+        dates, sentiments = zip(*sorted_pairs)
+        
+        reference_date = dates[-1]
         x = np.array([(d - reference_date).total_seconds()/60 for d in headlineSentimentDates[ticker]])
         y = np.array(headlineSentiments[ticker])
         if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:
@@ -113,13 +130,22 @@ def get_headline_sentiments():
             corr_matrix = np.corrcoef(x, y)
             headlineSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(headlineSentiments[ticker]) #multiplied by supporting nodes
             
+        count = 0
+        sum = 0
+        pascal = pascal_half(len(sentiments))
+        
+        for i in range(len(sentiments)):
+            sum += sentiments[i]*pascal[i]
+            count += pascal[i]
+        pascalWeightedHeadline[ticker]=sum/count
+        
 def generate_aggregated_csv():
     """
     Generates a CSV with the aggregated polarities of headlines for the group of stocks that are being analyzed. In
     the case where no conversations are available for a given stock, we default to Twitter conversations for our
     analysis.
     """
-    aggregated_df = pd.DataFrame(columns=["Ticker", "Conversations", "Headlines", "HeadlinesL2Delta", "ConversationL2Delta", "HeadlinesR2", "ConversationR2"])
+    aggregated_df = pd.DataFrame(columns=["Ticker", "Conversations", "Headlines", "HeadlinesL2Delta", "ConversationL2Delta", "HeadlinesR2", "ConversationR2","HeadlinePascal","ConversationPascal"])
 
     # Outputs aggregated headlines and conversations to a CSV.
     for ticker, headlines_polarity in headlines_map.items():
@@ -133,12 +159,14 @@ def generate_aggregated_csv():
                     #values = np.array(list(convoSentimentR2_map.values()))
                     #values = values[values != 0] #prevent divide by 0 errors
                     convoR2 = 0 #np.average(list(convoSentimentR2_map.values()))
+                    convoPascal = 0
                     
                     convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
                 else:
                     polarity = conversations_map[ticker]
                     convoL2D = conversation_delta[ticker]
                     convoR2 = convoSentimentR2_map[ticker]
+                    convoPascal = pascalWeightedConvo[ticker]
             else:
                 values = np.array(list(conversations_map.values()))
                 values = values[values != 0] #prevent divide by 0 errors
@@ -149,7 +177,10 @@ def generate_aggregated_csv():
                 convoR2 = 0 #np.average(list(convoSentimentR2_map.values()))
                 
                 convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
-            row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity, "HeadlinesL2Delta": headlines_delta[ticker], "ConversationL2Delta": convoL2D, "HeadlinesR2": headlineSentimentR2_map[ticker], "ConversationR2": convoR2}
+                
+                convoPascal = 0
+                
+            row = {"Ticker": ticker, "Conversations": polarity, "Headlines": headlines_polarity, "HeadlinesL2Delta": headlines_delta[ticker], "ConversationL2Delta": convoL2D, "HeadlinesR2": headlineSentimentR2_map[ticker], "ConversationR2": convoR2, "HeadlinePascal":pascalWeightedHeadline[ticker], "ConversationPascal":convoPascal}
             aggregated_df = aggregated_df._append(row, ignore_index=True)
         except RuntimeError as e:
             print(e, "was handled")
@@ -197,7 +228,10 @@ def get_conversation_sentiments():
         if count_of_conversations[ticker] > 0:
             conversations_map[ticker] = sum_of_polarities[ticker]/count_of_conversations[ticker]
             
-            reference_date = convoSentimentDates[0]
+            sorted_pairs = sorted(zip(convoSentimentDates, convoSentiments), key=lambda x: x[0], reverse=True)
+            dates, sentiments = zip(*sorted_pairs)
+            
+            reference_date = dates[-1]
             x = np.array([(d - reference_date).total_seconds()/60 for d in convoSentimentDates])
             y = np.array(convoSentiments)
             if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:
@@ -205,6 +239,16 @@ def get_conversation_sentiments():
             else:
                 corr_matrix = np.corrcoef(x, y)
                 convoSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(convoSentiments) #multiplied by supporting nodes
+                
+            count = 0
+            sum = 0
+            pascal = pascal_half(len(sentiments))
+            
+            for i in range(len(sentiments)):
+                sum += sentiments[i]*pascal[i]
+                count += pascal[i]
+            pascalWeightedConvo[ticker]=sum/count
+            
             #convoSentimentSumCount[0] += conversations_map[ticker]
             #convoSentimentSumCount[1] += 1
             convoSentimentSumCountL2D[0] += conversation_delta[ticker]
