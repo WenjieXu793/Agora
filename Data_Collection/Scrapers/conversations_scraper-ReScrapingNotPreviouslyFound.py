@@ -103,7 +103,7 @@ def output(overall_data, stock):
 
 def main():
     # Tickers and companies
-    stocks_df = pd.read_csv("C:\\Users\\indox\\Desktop\\School_Assignments\\Fall2024\\SER492\\Agora\\Data_Collection\\companies.csv")
+    stocks_df = pd.read_csv("../companies.csv")
     stocks_dict = {}
 
     for index, row in stocks_df.iterrows():
@@ -116,7 +116,7 @@ def main():
     i = 0
     #flag = 1
  
-    for stock in tickers:
+    for stock in tickers: #commented out section for skipping ahead to where the previous parsing failed.
         #if stock == "VIRT":
         #    flag = 0
         #if(flag):
@@ -126,11 +126,11 @@ def main():
         print("Getting conversations for:", stock, "    (", i+1, "/", total, ")")
         i+=1
         try:
-            file_path = "C:\\Users\\indox\\Desktop\\School_Assignments\\Fall2024\\SER492\\Agora\\Data_Collection\\Conversations\\"+stock.strip()+"_conversations.csv"
+            file_path = "../Conversations/"+stock.strip()+"_conversations.csv"
             if os.path.exists(file_path):
                 print("Conversations exists")
                 continue
-            #file_path = "C:\\Users\\indox\\Desktop\\School_Assignments\\Fall2024\\SER492\\Agora\\Data_Collection\\Conversations\\older\\"+stock.strip()+"_conversations.csv"
+            #file_path = "../Conversations/older/"+stock.strip()+"_conversations.csv"
             #if not os.path.exists(file_path):
             #    print("Conversations probably doesn't exist")
             #    continue

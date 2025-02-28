@@ -165,7 +165,7 @@ def main():
     # take aggregated_polarities.csv from /Polarity_Analysis/ and append to overall company list
     merge_polarities_with_all_stocks()
 
-    # fetch the stock metrics for each of the stocks (~4400) with yahoo finance
+    # fetch the stock metrics for each of the stocks
     fetch_metrics_for_all_stocks()
 
     # at this point, all_companies_data should have the 7 stock metrics + headline/convo polarities

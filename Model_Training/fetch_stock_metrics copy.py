@@ -5,6 +5,7 @@
 Authors: Wenjie Xu
 Functionality implemented:
 - Appends to a file instead of rewriting it in case of connection errors with the first script.
+- This is used for cases where fetch_stock_metrics.py stops working on due to one of the tickers. (this picks up where it leaves off.)
 """
 
 import pandas

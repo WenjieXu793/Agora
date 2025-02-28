@@ -63,7 +63,7 @@ def get_stock_metrics(company_df: pandas.DataFrame):
                         else:
                             company_df.at[index, col] = None
             else:
-                with open("NoMetrics.csv", mode='a', newline='') as csv_file:
+                with open("NoMetrics.csv", mode='a', newline='') as csv_file: # Put stocks  that I couldnt find metrics for here.
                     writer = csv.writer(csv_file)
                     writer.writerow(symbol)
         except (KeyError, RuntimeError) as e:

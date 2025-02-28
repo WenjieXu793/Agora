@@ -28,7 +28,6 @@ conversations_map = {}
 conversation_delta = {}
 headlines_map = {}
 headlines_delta = {}
-#convoSentimentSumCount=[0.0,0.0]
 convoSentimentR2_map = {}
 headlineSentimentR2_map = {}
 convoSentimentSumCountL2D=[0.0,0.0]
@@ -82,57 +81,57 @@ def get_headline_sentiments():
             if row['Ticker'] not in sum_of_polarities:
                 sum_of_polarities[row['Ticker']] = scores["compound"]
                 count_of_headlines[row['Ticker']] = 1
-                latestHeadline = row['Headline']
+                latestHeadline = row['Headline'] 
                 latestDate = row['Date']
                 latest = scores["compound"]
-                headlines_delta[row['Ticker']] = 0 
+                headlines_delta[row['Ticker']] = 0 #initialize to 0 in the case where only 1 headline exists
                 flag = True
                     
                 headlineSentiments[row['Ticker']] = [scores["compound"]]
                 headlineSentimentDates[row['Ticker']] = [row["Date"]]
                 
-            else:
-                if flag:
+            else: #Following is used to keep track of and update the headline delta
+                if flag: #If 2 headlines then update the delta
                     latestDate2 = row['Date']
                     flag = False
                     headlines_delta[row['Ticker']] = latest-scores["compound"]
-                if latestDate <= row['Date'] and not latestHeadline == row['Headline']:
-                    headlines_delta[row['Ticker']] = scores["compound"] - latest
+                if latestDate <= row['Date'] and not latestHeadline == row['Headline']:#if they are different headlines and the current is a more recent one
+                    headlines_delta[row['Ticker']] = scores["compound"] - latest #Then update the delta and current->latest, previous->latest2
                     latestHeadline = row['Headline']
                     latestDate2 = latestDate
                     latest = scores["compound"]
                     latestDate = row['Date']
-                elif latestDate2 < row['Date'] and not latestHeadline == row['Headline']:
-                    headlines_delta[row['Ticker']] = latest-scores["compound"]
+                elif latestDate2 < row['Date'] and not latestHeadline == row['Headline']: #if the current didn't happen before the latest but happened after latest2
+                    headlines_delta[row['Ticker']] = latest-scores["compound"] #update the difference to be between the current and latest, update current -> latest2
                     latestDate2 = row['Date']
                     
-                sum_of_polarities[row['Ticker']] = sum_of_polarities[row['Ticker']] + scores["compound"]
-                count_of_headlines[row['Ticker']] = count_of_headlines[row['Ticker']] + 1
-                headlineSentiments[row['Ticker']].append(scores["compound"])
-                headlineSentimentDates[row['Ticker']].append(row["Date"])
+                sum_of_polarities[row['Ticker']] = sum_of_polarities[row['Ticker']] + scores["compound"] # add all scores
+                count_of_headlines[row['Ticker']] = count_of_headlines[row['Ticker']] + 1 #add score counts
+                headlineSentiments[row['Ticker']].append(scores["compound"]) #headline sentiments polarity list
+                headlineSentimentDates[row['Ticker']].append(row["Date"])# headline sentiment date list
         except RuntimeError as e:
             print(e, "was handled")
 
     for ticker in sum_of_polarities:
-        headlines_map[ticker] = sum_of_polarities[ticker]/count_of_headlines[ticker]
+        headlines_map[ticker] = sum_of_polarities[ticker]/count_of_headlines[ticker] #Average sentiment of headlines
         
-        dates=headlineSentimentDates[ticker]
-        sentiments=headlineSentiments[ticker]
-        sorted_pairs = sorted(zip(dates, sentiments), key=lambda x: x[0], reverse=True)
+        dates=headlineSentimentDates[ticker]  #headline sentiment date list for this stock
+        sentiments=headlineSentiments[ticker] #headline sentiments list for this stock
+        sorted_pairs = sorted(zip(dates, sentiments), key=lambda x: x[0], reverse=True) #sort list based on dates - necessary for headlines due to multiple source and thus not already date sorted
         dates, sentiments = zip(*sorted_pairs)
         
-        reference_date = dates[-1]
+        reference_date = dates[-1] #reference date is the most recent
         x = np.array([(d - reference_date).total_seconds()/60 for d in headlineSentimentDates[ticker]])
-        y = np.array(headlineSentiments[ticker])
-        if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:
+        y = np.array(headlineSentiments[ticker]) 
+        if len(x)<2 or np.std(x) == 0 or np.std(y) == 0: #If there is insufficient points to calculate R-squared then leave as 0 for no correlation
             headlineSentimentR2_map[ticker] = 0
-        else:
+        else: #otherwise, calculate r-squared value
             corr_matrix = np.corrcoef(x, y)
             headlineSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(headlineSentiments[ticker]) #multiplied by supporting nodes
             
         count = 0
         sum = 0
-        pascal = pascal_half(len(sentiments))
+        pascal = pascal_half(len(sentiments))#calculate the pascal weighted temporal decay
         
         for i in range(len(sentiments)):
             sum += sentiments[i]*pascal[i]
@@ -150,30 +149,26 @@ def generate_aggregated_csv():
     # Outputs aggregated headlines and conversations to a CSV.
     for ticker, headlines_polarity in headlines_map.items():
         try:
-            if ticker in conversations_map:
-                if conversations_map[ticker] == -5:
+            if ticker in conversations_map: 
+                if conversations_map[ticker] == -5: #For cases where comments section for this ticker was available but there were on comments to pull.
                     values = np.array(list(conversations_map.values()))
                     values = values[values != 0] #prevent divide by 0 errors
-                    polarity = len(values) / np.sum(1.0 / values) #convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                    polarity = len(values) / np.sum(1.0 / values) 
                     
-                    #values = np.array(list(convoSentimentR2_map.values()))
-                    #values = values[values != 0] #prevent divide by 0 errors
                     convoR2 = 0 #np.average(list(convoSentimentR2_map.values()))
                     convoPascal = 0
                     
                     convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
-                else:
+                else: #Typical case where comments were sufficient for this ticker.
                     polarity = conversations_map[ticker]
                     convoL2D = conversation_delta[ticker]
                     convoR2 = convoSentimentR2_map[ticker]
                     convoPascal = pascalWeightedConvo[ticker]
-            else:
+            else: #For cases where comments section for this ticker was not available.
                 values = np.array(list(conversations_map.values()))
                 values = values[values != 0] #prevent divide by 0 errors
-                polarity = len(values) / np.sum(1.0 / values) #convoSentimentSumCount[0]/convoSentimentSumCount[1]
+                polarity = len(values) / np.sum(1.0 / values)
                 
-                #values = np.array(list(convoSentimentR2_map.values()))
-                #values = values[values != 0] #prevent divide by 0 errors
                 convoR2 = 0 #np.average(list(convoSentimentR2_map.values()))
                 
                 convoL2D = convoSentimentSumCountL2D[0]/convoSentimentSumCountL2D[1]
@@ -218,7 +213,7 @@ def get_conversation_sentiments():
                     flag = True
                 else:
                     if flag: #since conversations are already ordered by date.
-                        conversation_delta[ticker] = latest - scores["compound"]
+                        conversation_delta[ticker] = latest - scores["compound"]#Less logic here compared to headlines as conversations are pulled pre-sorted by most recent date order
                         flag = False
                     sum_of_polarities[ticker] = sum_of_polarities[ticker] + scores["compound"]
                     count_of_conversations[ticker] = count_of_conversations[ticker] + 1
@@ -228,36 +223,34 @@ def get_conversation_sentiments():
         if count_of_conversations[ticker] > 0:
             conversations_map[ticker] = sum_of_polarities[ticker]/count_of_conversations[ticker]
             
-            sorted_pairs = sorted(zip(convoSentimentDates, convoSentiments), key=lambda x: x[0], reverse=True)
+            sorted_pairs = sorted(zip(convoSentimentDates, convoSentiments), key=lambda x: x[0], reverse=True) #Not actually needed
             dates, sentiments = zip(*sorted_pairs)
             
             reference_date = dates[-1]
             x = np.array([(d - reference_date).total_seconds()/60 for d in convoSentimentDates])
             y = np.array(convoSentiments)
-            if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:
+            if len(x)<2 or np.std(x) == 0 or np.std(y) == 0:#if less than 2, not enough points for r-squared calculation, assume 0 correlation
                 convoSentimentR2_map[ticker] = 0
             else:
-                corr_matrix = np.corrcoef(x, y)
-                convoSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(convoSentiments) #multiplied by supporting nodes
+                corr_matrix = np.corrcoef(x, y) #Otherwise, calculate correlation
+                convoSentimentR2_map[ticker] = (corr_matrix[0, 1] ** 2) #* len(convoSentiments) #multiplied by supporting nodes (no longer using)
                 
             count = 0
             sum = 0
             pascal = pascal_half(len(sentiments))
             
-            for i in range(len(sentiments)):
+            for i in range(len(sentiments)): #Calculate temporal decay pascal weighted average.
                 sum += sentiments[i]*pascal[i]
                 count += pascal[i]
             pascalWeightedConvo[ticker]=sum/count
             
-            #convoSentimentSumCount[0] += conversations_map[ticker]
-            #convoSentimentSumCount[1] += 1
             convoSentimentSumCountL2D[0] += conversation_delta[ticker]
             convoSentimentSumCountL2D[1] += 1
         else:
-            conversations_map[ticker] = -5 #arbitrary number outside possible range of sentiment scores
+            conversations_map[ticker] = -5 #arbitrary number outside possible range of sentiment scores if there were no available sentiments for this stock.
 
 
-def twitter_sentiment(ticker):
+def twitter_sentiment(ticker): #not used
     """
     Gathers 100 tweets related to a specific stock ticker and runs the VADER sentiment analysis model on it to
     generate a polarity scores.

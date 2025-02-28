@@ -33,9 +33,9 @@ import time
 demoji.download_codes()
 
 
-def get_yahoo_conversations(stock):
+def get_seeking_alpha_conversations(stock): 
     """
-    Parses yahoo finance conversations page to get conversations related to the stock.
+    Parses seeking alpha finance conversations page to get conversations related to the stock.
     """
     option = webdriver.ChromeOptions()
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=option)
@@ -54,14 +54,14 @@ def get_yahoo_conversations(stock):
     sCommDates = []
     finDates = []
 
-    for s in stonk:
+    for s in stonk: #Parses comments and dates
         stockComments.append(s.get_text())
     for d in dates:
         sCommDates.append(d.get_text())
-    for d in sCommDates:
-        if d[0:1]=="Y":
+    for d in sCommDates: #gets date
+        if d[0:1]=="Y": #If the 
             finDates.append(datetime.today())
-        elif(d[0:1] !="V" and d[-1] != "M"):
+        elif(d[0:1] !="V" and d[-1] != "M"): #Parses out the time using 'M' in AM/PM. Parses out View using V
             finDates.append(datetime.strptime(str(d), '%b. %d, %Y'))
         
     return stockComments, finDates
@@ -74,12 +74,12 @@ def get_all_conversations(stock):
     :param stock: Name of stock ticker.
     :return: Overall array of conversations from various sources after cleaning (Removal of punctuations).
     """
-    yahoo_conversations, dates = get_yahoo_conversations(stock)
+    seeking_alpha_conversations, dates = get_seeking_alpha_conversations(stock)
     ret = []
-    if len(yahoo_conversations) == 0:
+    if len(seeking_alpha_conversations) == 0:
         return []
     for i in range(len(dates)):
-        ret.append([yahoo_conversations[i],dates[i]])
+        ret.append([seeking_alpha_conversations[i],dates[i]])
     return ret
 
 
@@ -107,7 +107,7 @@ def output(overall_data, stock):
 
 def main():
     # Tickers and companies
-    stocks_df = pd.read_csv("C:\\Users\\indox\\Desktop\\School_Assignments\\Fall2024\\SER492\\Agora\\Data_Collection\\companies.csv")
+    stocks_df = pd.read_csv("../companies.csv")
     stocks_dict = {}
 
     for index, row in stocks_df.iterrows():
@@ -121,7 +121,7 @@ def main():
  
     for stock in tickers:
         print("\n\n===================================================================")
-        print("Getting conversations for:", stock, "    (", i+1, "/", total, ")")
+        print("Getting conversations for:", stock, "    (", i+1, "/", total, ")")  #To show the progress of the scraping
         i+=1
         try:
             overall_conversations = get_all_conversations(stock)

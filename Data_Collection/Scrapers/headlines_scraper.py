@@ -11,6 +11,7 @@ Changes made:
 - added Date feature to final result.
 - stocks without headlines found were added to a file.
 - added printed progress tracker for scraping.
+- Some items commented out are no longer used because of website changes in webscraping enforcement.
 """
 
 # Libraries and Dependencies
@@ -157,7 +158,7 @@ def get_all_headlines(stock, company_name):
         hl_list = hl_dict_creator.get_reuters_headlines(stock, company_name)
         for hl in hl_list:
             hl_tuple = (hl['title'], hl['url'], hl['publisher'])
-            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name)
+            relevant = stock in hl['title'] or contains_company_name(hl['title'], company_name) #These were originally used to determine relevancy. However, some sources can be relevantot a company despite not having the company's name in the headline title.
             # relevant = True
             if relevant:
                 total_sources.append(hl_tuple)
